@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:dist="http://schemas.android.com/apk/distribution"
     xmlns:tools="http://schemas.android.com/tools"
     package="com.besheger.nu">
+
+    <dist:module dist:instant="true" />
+
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -12,9 +22,27 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Nu"
         tools:targetApi="31">
+        <activity
+            android:name="com.besheger.nu.ui.layout.SerchContact"
+            android:exported="false"
+            android:label="@string/title_activity_serch_contact"
+            android:theme="@style/Theme.Nu" />
+        <activity
+            android:name="com.besheger.nu.ui.layout.Registration"
+            android:exported="false"
+            android:label="@string/title_activity_registration"
+            android:theme="@style/Theme.Nu" />
+
+
+        <service
+            android:name=".StepCountService"
+            android:enabled="true"
+            android:exported="true" />
+
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyB4uu9-FzfqjdTtiRN5y_LYglG_1IRvtQ0" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"

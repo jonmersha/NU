@@ -1,141 +1,123 @@
 package com.besheger.nu
 
+import android.Manifest
+import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
-import android.location.Location
-import android.location.LocationListener
+import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material.Button
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
-import androidx.compose.material.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.besheger.nu.ui.theme.NuTheme
-import com.google.android.gms.maps.CameraUpdateFactory
-import com.google.android.gms.maps.model.CameraPosition
-import com.google.android.gms.maps.model.LatLng
-import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
-import com.google.maps.android.compose.rememberCameraPositionState
+import com.besheger.nu.viewmodel.MyViewModel
+import java.lang.Exception
 
-class MainActivity : ComponentActivity(),LocationListener, SensorEventListener {
+class MainActivity : ComponentActivity(),SensorEventListener{
+    var model: MyViewModel? =null
+    var activity:MapActivity?=null
+    private var totalSteps=0f
+    private var previousTotalSteps=0f
 
-    private var sensorManager: SensorManager? = null
 
-    private var running = false
-    private var totalSteps = 0f
 
-    private var previousTotalSteps = 0f
-
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-            setContent {
-            NuTheme {
+        val locationPermissionRequest = registerForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { permissions ->
+            when {
+                permissions.getOrDefault(Manifest.permission.ACCESS_FINE_LOCATION, false) -> {
+                    // Precise location access granted.
+                }
+                permissions.getOrDefault(Manifest.permission.ACTIVITY_RECOGNITION,false)->{}
+                permissions.getOrDefault(Manifest.permission.SEND_RESPOND_VIA_MESSAGE,false)->{}
+                permissions.getOrDefault(Manifest.permission.READ_CONTACTS,false)->{}
+                permissions.getOrDefault(Manifest.permission.ACCESS_COARSE_LOCATION, false) -> {} else -> {
 
+            }
+            }
+        }
+
+        locationPermissionRequest.launch(arrayOf(
+            Manifest.permission.ACCESS_FINE_LOCATION,
+            Manifest.permission.ACCESS_COARSE_LOCATION,
+            Manifest.permission.ACTIVITY_RECOGNITION,
+            Manifest.permission.READ_CONTACTS,
+            Manifest.permission.SEND_RESPOND_VIA_MESSAGE
+            ),
+
+        )
+
+
+        setContent {
+            NuTheme {
+              model = viewModel<MyViewModel>()
+                activity= MapActivity(model= model!!, activity = this)
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colors.background
                 ) {
-                    MainPoint("Android")
+                    activity!!.MainPoint("Android")
                 }
             }
         }
+
+        }
+
+    override fun onResume() {
+        super.onResume()
+
+        val sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        val sensor: Sensor? = sensorManager.getDefaultSensor(Sensor.TYPE_STEP_COUNTER)
+        if(sensor==null){
+            Toast.makeText(this,"No Sensor Detected", Toast.LENGTH_LONG).show()
+        }
+        else{
+            Toast.makeText(this,"Sensors Detected", Toast.LENGTH_LONG).show()
+            sensorManager?.registerListener(this,sensor, SensorManager.SENSOR_DELAY_UI)
+        }
+
     }
+    override fun onSensorChanged(event: SensorEvent?) {
+        totalSteps=event!!.values[0]
+        val currentStep =totalSteps.toInt()-previousTotalSteps.toInt()
 
-    override fun onLocationChanged(p0: Location) {
-        TODO("Not yet implemented")
-    }
-
-    override fun onSensorChanged(p0: SensorEvent?) {
-        TODO("Not yet implemented")
-
+        activity?.counter(currentStep)
     }
 
     override fun onAccuracyChanged(p0: Sensor?, p1: Int) {
-        TODO("Not yet implemented")
+
     }
+
 
 }
 
 
-
-@Composable
-private fun MapOpt(){
-    val singapore=LatLng(1.35, 103.87)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(singapore, 17f)
-    }
-    GoogleMap(
-        modifier = Modifier.fillMaxSize(),
-        cameraPositionState = cameraPositionState
-    ){
-        Marker(position =singapore,
-        title = "Singapore",
-        snippet = "Mark In singapore")
-    }
-}
-
-
-@Composable
-fun MainPoint(name: String) {
-    Box(modifier = Modifier.fillMaxWidth().fillMaxHeight()){
-        MapOpt2()
-    }
-}
-@Composable
-fun MapOpt2(){
-    val singapore = LatLng(1.356667, 103.878875)
-    val sydney = LatLng(1.356667, 103.878874)
+//    @Preview(showBackground = true)
+//    @Composable
+//    fun DefaultPreview() {
+//        NuTheme {
+//            MainPoint("Android",m)
+//        }
+//    }
 
 
 
-
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(singapore, 17f)
-    }
-
-    Box(Modifier.fillMaxSize()) {
-        GoogleMap(
-            modifier = Modifier.matchParentSize(),
-            cameraPositionState = cameraPositionState
-        ){
-            cameraPositionState.move(CameraUpdateFactory.newLatLng(singapore))
-            marker(locations=singapore)
-            marker(locations=sydney)
-
-        }
-        Button(
-            onClick = {
-               cameraPositionState.move(CameraUpdateFactory.newLatLng(sydney))
-
-
-
-            }
-        ) {
-            Text(text = "Animate camera to Sydney")
-        }
-    }
-}
-@Composable
- fun marker(locations:LatLng){
-    Marker(position =locations,
-        title = "Singapore",
-        snippet = "Mark In Singapore")
-}
-@Preview(showBackground = true)
-@Composable
-fun DefaultPreview() {
-    NuTheme {
-        MainPoint("Android")
-    }
-}
 
 
